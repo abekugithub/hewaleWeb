@@ -77,8 +77,6 @@
                             value="<?php echo $visitcode; ?>">
                         <input type="hidden" class="form-control" id="patient" name="patient"
                             value="<?php echo $patient; ?>">
-                        <input type="hidden" class="form-control" id="easyrtcid" name="easyrtcid"
-                            value="<?php echo $easyrtcid; ?>">
                         <div class="row">
                             <div class="col-sm-6"><b>Age:</b> <?php echo ($patientage < 1) ? '' : $patientage; ?></div>
                             <div class="col-sm-6"><b><?php echo ($patientgender=='M')? 'Male':'Female'; ?></b></div>
@@ -93,27 +91,26 @@
                     <!--Camera starts here-->
                     <div class="col-sm-12 clientself-video" style="left:-15px; top:-25px">
                         <div id="wraperselfVideo" style="width:200px; height:220px; padding-bottom:10px !important;">
-                            <video autoplay class="easyrtcMirror" id="selfVideo" muted volume="0" width="100%"
+                            <video autoplay class="matrixMirror" id="selfVideo" muted volume="0" width="100%"
                                 height="200" style="float:left;"></video>
                         </div>
-                        <?php //if(!empty($easyrtcid)){
-                        ?>
-                        <div id="otherClients" class="btn btn-info btn-block myspecialform startPMsg"
+                        <?php // Matrix integration replaces legacy EasyRTC implementation ?>
+                        <div id="matrixVideoCall" class="btn btn-info btn-block myspecialform startPMsg"
                             style="color:#fff !important; font-size:15px; font-weight:bold;"
-                            onClick="geteasyrtcid(1)"> Start Video Call</div>
+                            onclick="startMatrixVideoCall()"> Start Video Call</div>
 
-                        <div id="otherClients" class="btn btn-danger btn-block myspecialform endPMsg"
+                        <div id="matrixEndCall" class="btn btn-danger btn-block myspecialform endPMsg"
                             style="width:100%; height:40px; padding-top:8px; padding-bottom:20px !important; color:#fff !important; font-size:15px; font-weight:bold;"
-                            onClick="endeasyrtccall()"> End Call</div>
+                            onclick="endMatrixCall()"> End Call</div>
 
 
-                        <div id="otherClients" class="btn btn-info btn-block myspecialform startPCall2"
+                        <div id="matrixVoiceCall" class="btn btn-info btn-block myspecialform startPCall2"
                             style="width:100%; height:40px; padding-top:8px; padding-bottom:20px !important; color:#fff !important; font-size:15px; font-weight:bold;"
-                            onClick="geteasyrtcid(2)"> Start Phone Call</div>
+                            onclick="startMatrixVoiceCall()"> Start Voice Call</div>
 
-                        <div id="otherClients" class="btn btn-danger btn-block myspecialform endPMsg2"
+                        <div id="matrixEndVoiceCall" class="btn btn-danger btn-block myspecialform endPMsg2"
                             style="width:100%; height:40px; padding-top:8px; padding-bottom:20px !important; color:#fff !important; font-size:15px; font-weight:bold;"
-                            onClick="endeasyrtccall2()"> End Call</div>
+                            onclick="endMatrixCall()"> End Call</div>
 
                         <div style="position:relative;float:left;width:300px">
                             <video id="caller" width="300" height="200"></video>
@@ -328,10 +325,8 @@
                                         <textarea name="chatmsg" id="chatmsg" class="chatmsg chatmsgcount form-control" cols="5" placeholder="message..." maxlength="230"></textarea>
                                     </div>
                                     <div class="col-lg-2 col-sm-3">
-                                    <?php if (!empty($easyrtcid)) { ?>
-                                    <button type="button" id="otherClients" class="submitchat"
-                                        onClick="geteasyrtcchatid()"><i class="fa fa-send"></i></button>
-                                    <?php } ?>
+                                    <button type="button" id="matrixSendMessage" class="submitchat"
+                                        onclick="sendMatrixMessage()"><i class="fa fa-send"></i></button>
                                     </div>
                                 </div>
                                 <div class="characters-count">
@@ -1084,471 +1079,414 @@
 
     });
 </script>
+<script src="https://unpkg.com/matrix-js-sdk@26.1.0/dist/browser-matrix.min.js"></script>
 <script type="text/javascript">
-    function my_init() {
-        //easyrtc.setRoomOccupantListener(loggedInListener);
-        easyrtc.easyApp("Company_Chat_Line", "self", ["caller"],
-            function (myId) {
-                console.log("My easyrtcid is " + myId);
-            }
-        );
+    const matrixConfiguration = {
+        baseUrl: 'https://matrix.orconssystems.net',
+        userId: '@emma:matrix.orconssystems.net',
+        password: 'space123'
+    };
+
+    let matrixClient = null;
+    let consultRoomId = null;
+    let matrixReady = false;
+    let activeCall = null;
+
+    const matrixCallEvents = (window.matrixcs && window.matrixcs.CallEvent) ? window.matrixcs.CallEvent : {};
+
+    function escapeHtml(text) {
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
-    function loggedInListener(roomName, otherPeers) {
-        var otherClientDiv = document.getElementById('otherClients');
-        while (otherClientDiv.hasChildNodes()) {
-            otherClientDiv.removeChild(otherClientDiv.lastChild);
-        }
-        for (var i in otherPeers) {
-            var button = document.createElement('button');
-            button.onclick = function (easyrtcid) {
-                return function () {
-                    performCall(easyrtcid);
-                }
-            }(i);
+    function sanitizeAlias(localpart) {
+        const normalized = (localpart || '')
+            .toString()
+            .toLowerCase()
+            .replace(/[^a-z0-9._=\-]+/g, '-');
+        return normalized && normalized !== '-' ? normalized : 'consult-' + Date.now();
+    }
 
-            label = document.createTextNode(i);
-            button.appendChild(label);
-            otherClientDiv.appendChild(button);
+    function attachMediaStream(element, stream) {
+        if (!element || !stream) {
+            return;
+        }
+        if ('srcObject' in element) {
+            element.srcObject = stream;
+        } else {
+            element.src = window.URL.createObjectURL(stream);
+        }
+        const playPromise = element.play();
+        if (playPromise && typeof playPromise.catch === 'function') {
+            playPromise.catch(function () {
+                // Autoplay might be blocked; ignore.
+            });
         }
     }
 
+    function resetCallState() {
+        activeCall = null;
+        $('.endPMsg, .endPMsg2').hide();
+        $('.startPMsg, .startPCall2').show();
+        $('.callervideoview').hide();
 
-    function geteasyrtcid(easyrtctype) {
-        /*
-         * Get patient easyrtcid code
-         */
-        var patientcode = $('#patientcode').val();
-        $.ajax({
-            type: 'POST',
-            dataType: 'json',
-            url: 'public/Doctors/consulatationpp/model/getpatienteasyrtcid.php?easyrtctype=' +
-                easyrtctype,
-            data: {
-                "patientcode": patientcode
-            },
-            success: function (e) {
-                performCall(e.easyrtcid);
-                if (easyrtctype ==
-                    1) {
-                    $('.endPMsg').show();
-                    $('.endPMsg2').hide();
-                } else {
-                    $('.endPMsg').hide();
-                    $('.endPMsg2').show();
+        const localVideo = document.getElementById('selfVideo');
+        const remoteVideo = document.getElementById('callerVideo');
+
+        if (localVideo) {
+            localVideo.pause();
+            localVideo.srcObject = null;
+        }
+
+        if (remoteVideo) {
+            remoteVideo.pause();
+            remoteVideo.srcObject = null;
+        }
+    }
+
+    function showMatrixError(message, error) {
+        console.error(message, error);
+        const alertBox = document.getElementById('msg');
+        if (alertBox) {
+            alertBox.textContent = message;
+            alertBox.hidden = false;
+        }
+    }
+
+    function appendMatrixMessage(event) {
+        const content = event.getContent ? event.getContent() : null;
+        if (!content) {
+            return;
+        }
+
+        let body = content.body || '';
+        if (!body.trim()) {
+            return;
+        }
+
+        const chatContainer = document.getElementById('speech-bubble');
+        if (!chatContainer) {
+            return;
+        }
+
+        const sender = event.getSender ? event.getSender() : null;
+        const isMine = sender === (matrixClient ? matrixClient.getUserId() : null);
+
+        const wrapper = document.createElement('div');
+        const bubble = document.createElement('div');
+
+        if (isMine) {
+            wrapper.className = 'speech-bubble-rt';
+            bubble.className = 'speech-bubble-rt speech-bubble-right';
+        } else {
+            wrapper.className = 'speech-bubble-lt';
+            bubble.className = 'speech-bubble-lt speech-bubble-left';
+        }
+
+        bubble.innerHTML = escapeHtml(body).replace(/\n/g, '<br />');
+        wrapper.appendChild(bubble);
+        chatContainer.appendChild(wrapper);
+
+        const chatArea = document.getElementById('chatareaindoc');
+        if (chatArea) {
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+    }
+
+    function refreshCallFeeds() {
+        if (!activeCall) {
+            return;
+        }
+
+        const localVideo = document.getElementById('selfVideo');
+        const remoteVideo = document.getElementById('callerVideo');
+
+        if (typeof activeCall.getLocalFeeds === 'function') {
+            activeCall.getLocalFeeds().forEach(function (feed) {
+                if (feed && feed.stream) {
+                    attachMediaStream(localVideo, feed.stream);
                 }
-                $('.startPMsg').hide();
-                $('.startPCall2').hide();
+            });
+        }
 
-                /*Start ringing tone*/
-                audio.play();
-                audio.addEventListener('ended', function () {
-                    this.currentTime = 0;
-                    this.play();
-                }, false);
+        if (typeof activeCall.getRemoteFeeds === 'function') {
+            activeCall.getRemoteFeeds().forEach(function (feed) {
+                if (feed && feed.stream) {
+                    attachMediaStream(remoteVideo, feed.stream);
+                }
+            });
+        }
+    }
 
-            },
+    function bindCallLifecycle(call) {
+        const hangupEvent = (matrixCallEvents && matrixCallEvents.Hangup) || 'hangup';
+        const errorEvent = (matrixCallEvents && matrixCallEvents.Error) || 'error';
+        const feedsEvent = (matrixCallEvents && matrixCallEvents.FeedsChanged) || 'feeds_changed';
+
+        call.on(hangupEvent, function () {
+            resetCallState();
         });
-        //End getting easyrtcid and calling performcall function
+
+        call.on(errorEvent, function (error) {
+            showMatrixError('Matrix call error occurred.', error);
+            resetCallState();
+        });
+
+        call.on(feedsEvent, function () {
+            refreshCallFeeds();
+        });
+
+        if (typeof call.setLocalVideoElement === 'function') {
+            call.setLocalVideoElement(document.getElementById('selfVideo'));
+        }
+
+        if (typeof call.setRemoteVideoElement === 'function') {
+            call.setRemoteVideoElement(document.getElementById('callerVideo'));
+        }
     }
 
-    function endeasyrtccall() {
-        easyrtc.hangupAll();
-        $('.endPMsg').hide();
-        $('.endPMsg2').hide();
-        $('.startPMsg').show();
-        $('.startPCall2').hide();
-        audio.pause();
-        alert("Call ended successfully.");
+    function startMatrixVideoCall() {
+        if (!matrixReady || !consultRoomId) {
+            showMatrixError('Matrix chat is not ready yet. Please wait a moment and try again.');
+            return;
+        }
 
-        // easyrtc.setOnStreamClosed(
-        // function (easyrtcid, stream, streamName) {
-          
-        //     //This clears media stream
-        //     easyrtc.clearMediaStream =
-        //     function (element) {
-        //         if (typeof element.src !== 'undefined') {
-        //             //noinspection
-        //             JSUndefinedPropertyAssignment
-        //             element.src =
-        //                 "";
-        //         } else if (typeof element.srcObject !==
-        //             'undefined') {
-        //             element.srcObject =
-        //                 "";
-        //         } else if (typeof element.mozSrcObject !==
-        //             'undefined') {
-        //             element.mozSrcObject =
-        //                 null;
-        //         }
-        //       //  End clearing media stream
-        //     };
-        // });
-        // easyrtc.hangupAll();
-    }
+        if (activeCall) {
+            return;
+        }
 
-    function endeasyrtccall2() {
-      
-        easyrtc.hangupAll();
-        $('.endPMsg').hide();
-        $('.endPMsg2').hide();
+        const call = matrixcs.createNewMatrixCall(matrixClient, consultRoomId);
+        if (!call) {
+            showMatrixError('Unable to start a Matrix video call.');
+            return;
+        }
+
+        activeCall = call;
+        bindCallLifecycle(call);
+        call.placeVideoCall();
+
         $('.startPMsg').hide();
-        $('.startPCall2').show();
-        audio.pause();
-        /*alert("Call ended successfully.");*/
-
-        // easyrtc.setOnStreamClosed(function (easyrtcid, stream, streamName) {
-        //     // This clears media stream
-        //     easyrtc.clearMediaStream($('#callerVideo'));
-        //     easyrtc.clearMediaStream($('#selfVideo'));
-           
-        //     easyrtc.clearMediaStream = function (element) {
-        //         if (typeof element.src !== 'undefined') {
-        //             //noinspection JSUndefinedPropertyAssignment
-        //             element.src = "";
-
-        //         } else if (typeof element.srcObject !== 'undefined') {
-        //             element.srcObject = "";
-        //         } else if (typeof element.mozSrcObject !== 'undefined') {
-        //             element.mozSrcObject = null;
-        //         }
-        //         // End clearing media stream
-
-        //     };
-        // });
-        // easyrtc.hangupAll();
-
+        $('.endPMsg').show();
+        $('.callervideoview').show();
     }
 
-    function endeasyrtccall3() {
+    function startMatrixVoiceCall() {
+        if (!matrixReady || !consultRoomId) {
+            showMatrixError('Matrix chat is not ready yet. Please wait a moment and try again.');
+            return;
+        }
 
-        easyrtc.hangupAll();
-        $('.endPMsg').hide();
-        $('.endPMsg2').hide();
-        $('.startPMsg').hide();
+        if (activeCall) {
+            return;
+        }
+
+        const call = matrixcs.createNewMatrixCall(matrixClient, consultRoomId);
+        if (!call) {
+            showMatrixError('Unable to start a Matrix voice call.');
+            return;
+        }
+
+        activeCall = call;
+        bindCallLifecycle(call);
+        call.placeVoiceCall();
+
         $('.startPCall2').hide();
-        audio.pause();
-        alert("Call ended by patient.");
-
-        // easyrtc.setOnStreamClosed(function (easyrtcid, stream, streamName) {
-        //     // This clears media stream
-        //     easyrtc.clearMediaStream($('#callerVideo'));
-        //     easyrtc.clearMediaStream($('#selfVideo'));
-        //     easyrtc.clearMediaStream = function (element) {
-        //         if (typeof element.src !== 'undefined') {
-        //             //noinspection JSUndefinedPropertyAssignment
-        //             element.src = "";
-
-        //         } else if (typeof element.srcObject !== 'undefined') {
-        //             element.srcObject = "";
-        //         } else if (typeof element.mozSrcObject !== 'undefined') {
-        //             element.mozSrcObject = null;
-        //         }
-        //         // End clearing media stream
-
-        //     };
-        // });
-        // easyrtc.hangupAll();
+        $('.endPMsg2').show();
     }
 
-    function performCall(easyrtcid) {
-        easyrtc.call(
-            easyrtcid,
-            function (easyrtcid) {
-                console.log("completed call to " + easyrtcid);
-            },
-            function (errorMessage) {
-                console.log("err:" + errorMessage);
-                //Send onesignal notification to
-                if (errorMessage == 'MSG_REJECT_TARGET_EASYRTCID') {
-                    //console.log('This is the error' + errorMessage);
-                    var patientcode = $('#patientcode').val();
-                    $.ajax({
-                        type: 'POST',
-                        url: 'public/Doctors/consulatationpp/model/sendawakenotice.php',
-                        data: {
-                            patientcode: patientcode
-                        },
-                        success: function (e) {},
-                    });
-                }
-                //End sending onesignal notification
-            },
-            function (accepted, bywho) {
-                console.log((accepted ? "accepted" : endeasyrtccall3()) + " by " + bywho);
+    function endMatrixCall() {
+        if (activeCall && typeof activeCall.hangup === 'function') {
+            activeCall.hangup('user_hangup');
+        }
+        resetCallState();
+    }
+
+    function sendMatrixMessage() {
+        if (!matrixReady || !consultRoomId || !matrixClient) {
+            showMatrixError('Matrix chat is not ready yet. Please wait a moment and try again.');
+            return;
+        }
+
+        const messageField = document.getElementById('chatmsg');
+        if (!messageField) {
+            return;
+        }
+
+        const text = messageField.value.trim();
+        if (!text) {
+            return;
+        }
+
+        matrixClient.sendEvent(consultRoomId, 'm.room.message', {
+            msgtype: 'm.text',
+            body: text
+        }).then(function () {
+            messageField.value = '';
+            const counter = document.querySelector('.characters-count digit');
+            if (counter) {
+                counter.textContent = '0';
             }
-        );
+        }).catch(function (error) {
+            showMatrixError('Unable to send message.', error);
+        });
     }
-    var selfEasyrtcid = "";
-    var audio = new Audio('media/audio/ackerjoy.mp3');
+
+    function loadExistingMessages(roomId) {
+        const room = matrixClient.getRoom(roomId);
+        if (!room) {
+            return;
+        }
+
+        const events = room.getLiveTimeline().getEvents();
+        events.forEach(function (event) {
+            if (event.getType && event.getType() === 'm.room.message') {
+                appendMatrixMessage(event);
+            }
+        });
+
+        const chatArea = document.getElementById('chatareaindoc');
+        if (chatArea) {
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+    }
+
+    function bindMatrixEvents(roomId) {
+        matrixClient.on('Room.timeline', function (event, room, toStartOfTimeline) {
+            if (toStartOfTimeline) {
+                return;
+            }
+
+            if (!room || room.roomId !== roomId) {
+                return;
+            }
+
+            if (event.getType && event.getType() === 'm.room.message') {
+                appendMatrixMessage(event);
+            }
+        });
+
+        matrixClient.on('Call.incoming', function (call) {
+            if (activeCall) {
+                call.hangup('busy');
+                return;
+            }
+
+            activeCall = call;
+            bindCallLifecycle(call);
+            call.answer();
+
+            $('.startPMsg, .startPCall2').hide();
+            $('.endPMsg, .endPMsg2').show();
+            $('.callervideoview').show();
+        });
+    }
+
+    async function ensureConsultationRoom(aliasLocalpart, roomAlias, patientName) {
+        try {
+            const joinedRoom = await matrixClient.joinRoom(roomAlias);
+            return joinedRoom && (joinedRoom.roomId || joinedRoom.room_id);
+        } catch (error) {
+            if (error && (error.errcode === 'M_NOT_FOUND' || error.errcode === 'M_UNRECOGNIZED' || error.statusCode === 404)) {
+                const created = await matrixClient.createRoom({
+                    room_alias_name: aliasLocalpart,
+                    name: `Consultation ${patientName || aliasLocalpart}`,
+                    preset: 'private_chat',
+                    visibility: 'private'
+                });
+                return created && created.room_id;
+            }
+
+            throw error;
+        }
+    }
+
+    async function initMatrixConsultation() {
+        const consultCodeField = document.getElementById('consultcode');
+        if (!consultCodeField) {
+            return;
+        }
+
+        const patientNameField = document.getElementById('patientname');
+        const aliasLocalpart = sanitizeAlias(consultCodeField.value);
+        const roomAlias = `#${aliasLocalpart}:matrix.orconssystems.net`;
+
+        matrixClient = matrixcs.createClient({
+            baseUrl: matrixConfiguration.baseUrl,
+            timelineSupport: true
+        });
+
+        try {
+            await matrixClient.loginWithPassword(matrixConfiguration.userId, matrixConfiguration.password);
+        } catch (error) {
+            showMatrixError('Unable to connect to the consultation chat service.', error);
+            return;
+        }
+
+        matrixClient.once('sync', function (state) {
+            if (state === 'PREPARED') {
+                ensureConsultationRoom(aliasLocalpart, roomAlias, patientNameField ? patientNameField.value : '')
+                    .then(function (roomId) {
+                        if (!roomId) {
+                            throw new Error('Matrix consultation room id is unavailable');
+                        }
+
+                        consultRoomId = roomId;
+                        matrixReady = true;
+                        bindMatrixEvents(roomId);
+                        loadExistingMessages(roomId);
+                        $('.startPMsg, .startPCall2').removeClass('disabled');
+                    })
+                    .catch(function (error) {
+                        showMatrixError('Unable to prepare the consultation room.', error);
+                    });
+            }
+        });
+
+        matrixClient.startClient({ initialSyncLimit: 20 });
+    }
+
+    function phonecall() {
+        $('#phone').show();
+        $('#video').hide();
+        $('#chat').hide();
+    }
+
+    function initvideo() {
+        $('#phone').hide();
+        $('#video').show();
+        $('#chat').hide();
+    }
+
+    function hidevideobtn() {
+        $('#phone').hide();
+        $('#video').hide();
+        $('#chat').show();
+    }
+
+    function voicecall(phone, name = 'Hewale Patient') {
+        if (!phone) {
+            alert('Patient phone number invalid');
+            return;
+        }
+
+        const url = 'https://' + window.location.host + '/sip/phone/index.php?phone=' + phone + '&name=' + encodeURIComponent(name);
+        const features = 'menubar=no,location=no,resizable=no,scrollbars=no,status=no,addressbar=no,width=320,height=480';
+        window.open(url, 'ctxPhone', features);
+    }
 
     $(document).ready(function () {
         $('#phone').hide();
         $('#video').hide();
         $('#chat').show();
-        // easyrtc.setSocketUrl("https://192.168.15.8:8443");
-		easyrtc.setSocketUrl("https://orconsvideo.com:8443");
-        easyrtc.setVideoDims(640, 480);
-        // easyrtc.setVideoDims(1280, 720);
+        $('.endPMsg, .endPMsg2').hide();
         $('.callervideoview').hide();
-        //easyrtc.setRoomOccupantListener(convertListToButtons);
-        // easyrtc.easyApp("easyrtc.audioVideoSimple", "selfVideo", ["callerVideo"], loginSuccess, loginFailure);
-
-        easyrtc.connect("easyrtc.kasahealth", loginSuccess, loginFailure);
-        //easyrtc.connect("easyrtc.instantMessaging", loginSuccess, loginFailure);
-        easyrtc.setPeerListener(addToConversation);
-
-        easyrtc.setStreamAcceptor(function (easyrtcid, stream, streamName) {
-            // document.getElementById('callerName').innerHTML = easyrtc.idToName(easyrtcid);
-            easyrtc.setVideoObjectSrc(document.getElementById("callerVideo"), stream);
-            $('.callervideoview').show();
-
-            //Notify client if there is a disconnection 
-            easyrtc.setDisconnectListener(function () {
-                // easyrtc.showError("SYSTEM-ERROR", "Disconnected. You will be automatically reconnected when your internet connection is stable. Click Okay to continue");
-                self.disconnectListener = disconnectListener;
-            });
-            /*
-                * Stop ringing done when 
-                * call is picked by other user.
-            */
-            audio.pause();
-        });
-
-        function disconnectListener(){
-            loginSuccess(selfEasyrtcid);
-        }
-
-        easyrtc.setOnError(function (errorObject) {
-            alert("Notification: Slow Network.");
-            // alert(errorObject.errorText);
-            // document.getElementById("errMessageDiv").innerHTML += errorObject.errorText;
-        });
-
-        /*
-            * This occurs when the call is ended
-            * and clears the media stream
-        */
-        easyrtc.setOnStreamClosed(function (easyrtcid, stream, streamName) {
-            console.log('id=' ,easyrtcid,' stream=', stream, ' strea', streamName);
-            if(stream.active ===false){
-                return;
-            }
-            // alert("Call ended successfullysssss.");
-            $('.endPMsg').hide();
-            $('.endPMsg2').hide();
-            $('.callervideoview').hide();
-            // endeasyrtccall();
-            //This clears media stream
-            easyrtc.clearMediaStream = function (element) {
-                if (typeof element.src !== 'undefined') {
-                    //noinspection JSUndefinedPropertyAssignment
-                    element.src = "";
-
-                } else if (typeof element.srcObject !== 'undefined') {
-                    element.srcObject = "";
-                } else if (typeof element.mozSrcObject !== 'undefined') {
-                    element.mozSrcObject = null;
-                }
-                //End clearing media stream
-            };
-        });
-        /*
-            * End of media stream
-        */
+        initMatrixConsultation();
     });
-		
-		function voicecall(phone, name = 'Hewale Patient') {
-        // launch the phone window. 
-        // alert(window.location.hostname);
-        if (!phone) return alert("Patient phone number invalid")
-        var url      = 'https://' + window.location.host + '/sip/phone/index.php?phone='+phone +'&name='+name,
-            features = 'menubar=no,location=no,resizable=no,scrollbars=no,status=no,addressbar=no,width=320,height=480'; 
-        window.open(url, 'ctxPhone', features); 
-    }
-
-    function phonecall() {
-        easyrtc.enableVideo(false);
-        easyrtc.enableVideoReceive(false);
-
-        easyrtc.initMediaSource(
-        function (mediastream) {
-            /*easyrtc.setVideoObjectSrc(document.getElementById("selfVideo"),mediastream);*/
-            $('.startPCall2').show();
-            $('.startPMsg').hide();
-            $('.endPMsg').hide();
-            $('.endPMsg2').hide();
-            $('#selfVideo').hide();
-            $('#wraperselfVideo').hide();
-            $('.callervideoview').hide();
-            $('#phone').show();
-            $('#video').hide();
-            $('#chat').hide();
-        },
-        function (errorCode, errorText) {
-            easyrtc.showError(errorCode, errorText);
-        });
-    }
-
-    function initvideo() {
-        easyrtc.enableVideo(true);
-        easyrtc.enableVideoReceive(true);
-        easyrtc.initMediaSource(
-        function (mediastream) {
-            easyrtc.setVideoObjectSrc(document.getElementById("selfVideo"), mediastream);
-            $('.startPMsg').show();
-            $('.callervideoview').show();
-            $('#selfVideo').show();
-            $('.startPCall2').hide();
-            $('#wraperselfVideo').show();
-            $('.callervideoview').show();
-            $('#phone').hide();
-            $('#video').show();
-            $('#chat').hide();
-        },
-        function (errorCode, errorText) {
-            easyrtc.showError(errorCode, errorText);
-        });
-    }
-
-    function hidevideobtn() {
-        $('.startPMsg').hide();
-        $('.startPCall2').hide();
-        $('#selfVideo').hide();
-        $('#wraperselfVideo').hide();
-        $('.callervideoview').hide();
-        $('#phone').hide();
-        $('#video').hide();
-        $('#chat').show();
-    }
-
-    function clearConnectList() {
-        var otherClientDiv = document.getElementById("otherClients");
-        while (otherClientDiv.hasChildNodes()) {
-            otherClientDiv.removeChild(otherClientDiv.lastChild);
-        }
-    }
-
-    function convertListToButtons(roomName, data, isPrimary) {
-        clearConnectList();
-        var otherClientDiv = document.getElementById("otherClients");
-        for (var easyrtcid in data) {
-            var button = document.createElement("button");
-            button.setAttribute("type", "button");
-            button.onclick = function (easyrtcid) {
-                return function () {
-                    performCall(easyrtcid);
-                };
-            }(easyrtcid);
-
-            var label = document.createTextNode(easyrtc.idToName(easyrtcid));
-            button.appendChild(label);
-            otherClientDiv.appendChild(button);
-        }
-    }
-
-    function loginSuccess(easyrtcid) {
-         selfEasyrtcid = easyrtcid;
-        document.getElementById("iam").innerHTML = "I am " + easyrtc.cleanId(easyrtcid);
-
-        /*
-         * Save Doctor easyrtcid
-         */
-        $.ajax({
-            type: 'POST',
-            url: 'public/Doctors/consulatationpp/model/saveeasyrtcid.php',
-            data: {
-                selfEasyrtcid: selfEasyrtcid
-            },
-            success: function (e) {
-
-            },
-        });
-        //End saving doctor easyrtcid		
-    } 
-
-    function loginFailure(errorCode, message) {
-        easyrtc.showError(errorCode, message);
-    }
-
-    //End video chat
 </script>
-
-
-<!--Start instant messaging chat-->
-<script type="text/javascript">
-    function addToConversation(who, msgType, content) {
-        console.log('Message Type: ', msgType);
-        console.log('Message Payload: ', content);
-        if (who == 'Me') {
-            // Escape html special characters, then add linefeeds.
-            content = content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            content = content.replace(/\n/g, "<br />");
-            $("#speech-bubble").append(
-                "<div class='speech-bubble-rt'><div class='speech-bubble-rt speech-bubble-right' id='conversation2'>" +
-                content + "</div></div>");
-            $('#chatareaindoc').scrollTop($('#chatareaindoc')[0].scrollHeight);
-        } else {
-            var patienteasyrtcid = $('#easyrtcid').val();
-            if (who == patienteasyrtcid) {
-                switch (msgType) {
-                    case 'message':
-                        // Escape html special characters, then add linefeeds.
-                        content = content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                        content = content.replace(/\n/g, "<br />");
-                        $("#speech-bubble").append("<div class='speech-bubble-lt'><div class='speech-bubble-lt speech-bubble-left' id='conversation'>" + content + "</div></div>");
-                        break;
-                
-                    case 'audio':
-                        $("#speech-bubble").append("<div class='speech-bubble-lt'><div class='speech-bubble-lt speech-bubble-left' id='conversation'><audio controls style=\"width: 100%; height: 2.5em;\"> <source src='"+ content +"' type=\"audio/aac\"> <source src='"+ content +"' type=\"audio/aac\"> </audio></div></div>");
-                        break;
-
-                    case 'image':
-                        $("#speech-bubble").append("<div class='speech-bubble-lt'><div class='speech-bubble-lt speech-bubble-left' id='conversation'><img src='" + content + "' width=\"100%\" height=\"300px\" style=\"margin-bottom: 0.5em; object-fit: cover; border-radius: 5px;\"/></div></div>");
-                        break;
-
-                    case 'file':
-                        $("#speech-bubble").append("<div class='speech-bubble-lt'><div class='speech-bubble-lt speech-bubble-left' id='conversation'><img src='" + content + "' width=\"100%\" height=\"300px\" style=\"margin-bottom: 0.5em; object-fit: cover; border-radius: 5px;\"/></div></div>");
-                        break;
-                }
-            }
-            $('#chatareaindoc').scrollTop($('#chatareaindoc')[0].scrollHeight);
-
-        }
-    }
-
-
-    function geteasyrtcchatid() {
-        /*
-         * Get patient easyrtcid code
-         */
-        var patientcode = $('#patientcode').val();
-        $.ajax({
-            type: 'POST',
-            dataType: 'json',
-            url: 'public/Doctors/consulatationpp/model/getpatienteasyrtcid.php',
-            data: {
-                "patientcode": patientcode
-            },
-            success: function (e) {
-                sendStuffWS(e.easyrtcid);
-            },
-        });
-        //End getting easyrtcid and calling performcall function
-    }
-
-    function sendStuffWS(otherEasyrtcid) {
-        var text = document.getElementById("chatmsg").value;
-        if (text.replace(/\s/g, "").length === 0) { // Don"t send just whitespace
-            return;
-        }
-
-        easyrtc.sendDataWS(otherEasyrtcid, "text", text);
-        addToConversation("Me", "message", text);
-        //document.getElementById("chatmsg").value = "";
-    }
-</script>
-
 <!--This script is an automatic timer up-->
 <script type="text/javascript">
     var timecounter = $(document).ready(function () {
