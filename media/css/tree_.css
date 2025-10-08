@@ -1,0 +1,100 @@
+/*
+ * Tree CSS 
+ * Developed by: Reggie Gyan -> 26-7-2017
+ * @Orcons Systems
+ **/
+
+.gyn-treeview,
+.gyn-treeview * {
+    padding: 3px 0 3px 0;
+    margin: 0;
+    list-style: none;
+}
+
+.gyn-treeview label[for]::before,
+.gyn-treeview label span::before {
+    content: "\25b6";
+    display: inline-block;
+    margin: 2px 0 0;
+    width: 15px;
+    height: 15px;
+    vertical-align: top;
+    text-align: center;
+    color: #888;
+    font-size: 8px;
+    line-height: 13px;
+}
+
+.gyn-treeview a {
+    text-decoration: none;
+    color: #234;
+}
+
+.gyn-treeview li ul {
+    margin: 0 0 0 30px;
+    color: #234;
+}
+
+.gyn-treeview * {
+    vertical-align: middle;
+}
+
+.gyn-treeview {
+    font-family: "robotolight", "robotothin", sans-serif;
+    font-weight: 200 !important;
+}
+
+.gyn-treeview li {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+}
+
+.gyn-treeview input[type="checkbox"] {
+    display: none;
+}
+
+.gyn-treeview label {
+    cursor: pointer;
+}
+
+.gyn-treeview label[for]::before {
+    -webkit-transform: translatex(-24px);
+    -moz-transform: translatex(-24px);
+    -ms-transform: translatex(-24px);
+    -o-transform: translatex(-24px);
+    transform: translatex(-24px);
+}
+
+.gyn-treeview label span::before {
+    -webkit-transform: translatex(16px);
+    -moz-transform: translatex(16px);
+    -ms-transform: translatex(16px);
+    -o-transform: translatex(16px);
+    transform: translatex(16px);
+}
+
+.gyn-treeview input[type="checkbox"][id]:checked~label[for]::before {
+    content: "\25bc";
+}
+
+.gyn-treeview input[type="checkbox"][id]:not(:checked)~ul {
+    display: none;
+}
+
+.gyn-treeview label:not([for]) {
+    margin: 0 6px 0 0;
+}
+
+.gyn-treeview label span::before {
+    content: "";
+    border: solid 1px #888;
+    color: #234;
+    opacity: .50;
+}
+
+.gyn-treeview label input:checked+span::before {
+    content: "\2714";
+    box-shadow: 0 0 2px rgba(0, 0, 0, .25) inset;
+    opacity: 1;
+}

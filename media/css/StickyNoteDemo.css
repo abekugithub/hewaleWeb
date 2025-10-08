@@ -1,0 +1,10 @@
+#divStickyNotesContainer {
+   position: absolute;
+   width:1000px;
+   height:1200px;
+   top:100px;
+   left:500px;
+   margin: 0px;
+   font-family:Gloria,Hallelujah;
+   /*background-color:#CD5052 */
+}

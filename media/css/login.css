@@ -1,0 +1,773 @@
+/* CSS Document */
+
+@import url('sweet-alert.css');
+
+/* Login Main CSS */
+body, html {
+    height: 100%;
+    font-family: "Roboto", "Helvetica", sans-serif !important;
+  }
+
+a {
+    color: #1565C0;
+    display: inline-block;
+    text-decoration: none;
+    font-weight: 400;
+}
+
+h2 {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: inline-block;
+    margin: 40px 8px 10px 8px;
+    color: #cccccc;
+}
+
+#background {
+    height: 100%;
+    background-image: url('../img/bg.jpg');
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+#background-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.2);
+    background-size: cover !important;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+}
+
+
+/* STRUCTURE */
+
+.wrapper {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    min-height: 100%;
+    padding: 20px;
+}
+@media only screen and (max-width: 620px) {
+    .login-form {
+        transform: scale(2) !important;
+    }
+}
+
+#formContent {
+    background: rgba(255, 255, 255, 1);
+    padding: 30px;
+    width: 90%;
+    max-width: 450px;
+    position: relative;
+    padding: 0px;
+    -webkit-box-shadow: 0 30px 60px 0 rgba(0, 0, 0, 0.3);
+    box-shadow: 0 30px 60px 0 rgba(0, 0, 0, 0.3);
+    text-align: center;
+}
+
+#formFooter {
+    background-color: #1565C0;
+    /* border-top: 1px solid #dce8f1; */
+    padding: 25px;
+    text-align: center;
+}
+
+.zoom-page{
+    transform: scale(2) !important;
+}
+/* TABS */
+
+h2.inactive {
+    color: #cccccc;
+}
+
+h2.active {
+    color: #0d0d0d;
+    border-bottom: 2px solid #1565C0;
+}
+
+
+/* FORM TYPOGRAPHY*/
+
+.newtxt input[type="text"]#subtxt {
+    -webkit-appearance: none !important;
+    color: #888 !important;
+    text-align: right !important;
+    width: 75px !important;
+    border: 1px solid gray;
+    border-left: 0px !important;
+    margin: 0 0 0 -7px !important;
+    background: white;
+}
+
+.newtxt input[type="text"]#maintxt {
+    -webkit-appearance: none !important;
+    border: 1px solid gray;
+    border-right: 0px !important;
+    outline: none !important;
+}
+
+input[type=button],
+input[type=submit],
+input[type=reset] {
+    background-color: #1565C0;
+    border: none;
+    color: white;
+    padding: 15px 80px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    text-transform: uppercase;
+    font-size: 13px;
+    -webkit-box-shadow: 0 10px 30px 0 rgba(#1565C0, 0.4);
+    box-shadow: 0 10px 30px 0 rgba(#1565C0, 0.4);
+    margin: 5px 20px 40px 20px;
+    -webkit-transition: all 0.3s ease-in-out;
+    -moz-transition: all 0.3s ease-in-out;
+    -ms-transition: all 0.3s ease-in-out;
+    -o-transition: all 0.3s ease-in-out;
+    transition: all 0.3s ease-in-out;
+}
+
+input[type=button]:hover,
+input[type=submit]:hover,
+input[type=reset]:hover {
+    background-color: #1565C0;
+}
+
+input[type=button]:active,
+input[type=submit]:active,
+input[type=reset]:active {
+    -moz-transform: scale(0.95);
+    -webkit-transform: scale(0.95);
+    -o-transform: scale(0.95);
+    -ms-transform: scale(0.95);
+    transform: scale(0.95);
+}
+
+input[type=text],
+input[type=email],
+input[type=tel],
+input[type=password],
+select {
+    background-color: #f6f6f6;
+    border: none;
+    color: #0d0d0d;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 5px;
+    width: 85%;
+    border: 1px solid #f6f6f6;
+    -webkit-transition: all 0.5s ease-in-out;
+    -moz-transition: all 0.5s ease-in-out;
+    -ms-transition: all 0.5s ease-in-out;
+    -o-transition: all 0.5s ease-in-out;
+    transition: all 0.5s ease-in-out;
+}
+
+input[type=text]:focus,
+input[type=email]:focus,
+input[type=tel]:focus,
+input[type=password]:focus,
+select:focus {
+    background-color: #fff;
+    border-bottom: 2px solid #1565C0;
+}
+
+input[type=text]:placeholder,
+input[type=email]:placeholder,
+input[type=tel]:placeholder,
+input[type=password]:placeholder,
+select:placeholder {
+    color: #cccccc;
+}
+
+.btn-danger {
+    background: red !important;
+    -webkit-box-shadow: 0 10px 30px 0 rgba(255, 0, 0, 0.4) !important;
+    box-shadow: 0 10px 30px 0 rgba(255, 0, 0, 0.4) !important;
+}
+
+
+/* ANIMATIONS */
+
+
+/* Simple CSS3 Fade-in-down Animation */
+
+.fadeInDown {
+    -webkit-animation-name: fadeInDown;
+    animation-name: fadeInDown;
+    -webkit-animation-duration: 1s;
+    animation-duration: 1s;
+    -webkit-animation-fill-mode: both;
+    animation-fill-mode: both;
+}
+
+@-webkit-keyframes fadeInDown {
+    0% {
+        opacity: 0;
+        -webkit-transform: translate3d(0, -100%, 0);
+        transform: translate3d(0, -100%, 0);
+    }
+
+    100% {
+        opacity: 1;
+        -webkit-transform: none;
+        transform: none;
+    }
+}
+
+@keyframes fadeInDown {
+    0% {
+        opacity: 0;
+        -webkit-transform: translate3d(0, -100%, 0);
+        transform: translate3d(0, -100%, 0);
+    }
+
+    100% {
+        opacity: 1;
+        -webkit-transform: none;
+        transform: none;
+    }
+}
+
+
+/* Simple CSS3 Fade-in Animation */
+
+@-webkit-keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@-moz-keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.fadeIn {
+    opacity: 0;
+    -webkit-animation: fadeIn ease-in 1;
+    -moz-animation: fadeIn ease-in 1;
+    animation: fadeIn ease-in 1;
+    -webkit-animation-fill-mode: forwards;
+    -moz-animation-fill-mode: forwards;
+    animation-fill-mode: forwards;
+    -webkit-animation-duration: 1s;
+    -moz-animation-duration: 1s;
+    animation-duration: 1s;
+}
+
+.fadeIn.first {
+    -webkit-animation-delay: 0.4s;
+    -moz-animation-delay: 0.4s;
+    animation-delay: 0.4s;
+}
+
+.fadeIn.second {
+    -webkit-animation-delay: 0.6s;
+    -moz-animation-delay: 0.6s;
+    animation-delay: 0.6s;
+}
+
+.fadeIn.third {
+    -webkit-animation-delay: 0.8s;
+    -moz-animation-delay: 0.8s;
+    animation-delay: 0.8s;
+}
+
+.fadeIn.fourth {
+    -webkit-animation-delay: 1s;
+    -moz-animation-delay: 1s;
+    animation-delay: 1s;
+}
+
+
+/* Simple CSS3 Fade-in Animation */
+
+.underlineHover:after {
+    display: block;
+    left: 0;
+    bottom: -10px;
+    width: 0;
+    height: 2px;
+    background-color: #1565C0;
+    content: "";
+    transition: width 0.2s;
+}
+
+.underlineHover:hover {
+    color: #0d0d0d;
+}
+
+.underlineHover:hover:after {
+    width: 100%;
+}
+
+
+/* OTHERS */
+
+*:focus {
+    outline: none;
+}
+
+#icon {
+    width: 30%;
+    padding-top: 10px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+.company-name {
+    width: 100%;
+    padding: 10px 10px 20px 10px;
+    font-size: 18px;
+    color: #0d0d0d;
+    font-weight: 600;
+}
+
+.login-msg {
+    margin: 0 auto;
+    padding: 15px;
+    width: 100%;
+    background: red;
+    color: white;
+    text-align: center;
+    top: 0;
+}
+
+.success-msg {
+    margin: 0 auto;
+    padding: 15px;
+    width: 100%;
+    background: #01C04B;
+    color: white;
+    text-align: center;
+    top: 0;
+}
+
+
+/*Page loader*/
+
+@-webkit-keyframes lds-ripple {
+    0% {
+        top: 90px;
+        left: 90px;
+        width: 0;
+        height: 0;
+        opacity: 1;
+    }
+
+    100% {
+        top: 15px;
+        left: 15px;
+        width: 150px;
+        height: 150px;
+        opacity: 0;
+    }
+}
+
+@keyframes lds-ripple {
+    0% {
+        top: 90px;
+        left: 90px;
+        width: 0;
+        height: 0;
+        opacity: 1;
+    }
+
+    100% {
+        top: 15px;
+        left: 15px;
+        width: 150px;
+        height: 150px;
+        opacity: 0;
+    }
+}
+
+.lds-ripple {
+    position: relative;
+}
+
+.lds-ripple div {
+    box-sizing: content-box;
+    position: absolute;
+    border-width: 10px;
+    border-style: solid;
+    opacity: 1;
+    border-radius: 50%;
+    -webkit-animation: lds-ripple 1s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+    animation: lds-ripple 1s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+
+.lds-ripple div:nth-child(1) {
+    border-color: #1565C0;
+}
+
+.lds-ripple div:nth-child(2) {
+    border-color: #1565C0;
+    -webkit-animation-delay: -0.5s;
+    animation-delay: -0.5s;
+}
+
+#loading {
+    background-color: rgba(0, 0, 0, 0.5);
+    height: 100%;
+    width: 100%;
+    position: fixed;
+    left: 0;
+    z-index: 1;
+    margin-top: 0px;
+    top: 0px;
+    z-index: 9999;
+}
+
+#loading-center {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+#loading-center-absolute {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    height: 200px;
+    width: 200px;
+    margin-top: -100px;
+    margin-left: -100px;
+    -ms-transform: rotate(-135deg);
+    -webkit-transform: rotate(-135deg);
+    transform: rotate(-135deg);
+}
+
+.turing {
+    width: 85%;
+    margin: 0 auto;
+}
+
+.turing .code {
+    width: 40%;
+    margin-top: 5px;
+    background-color: #E6E6E6;
+    height: 53px;
+    float: left;
+}
+
+.turing .reload {
+    font-size: 10px;
+    padding: 2px;
+    background: #1565C0;
+    color: white;
+    position: absolute;
+    width: 20%;
+    -webkit-box-shadow: 0 10px 30px 0 rgba(#1565C0, 0.4);
+    box-shadow: 0 10px 30px 0 rgba(#1565C0, 0.4);
+}
+
+.turing a {
+    display: block;
+    text-decoration: none;
+    font-weight: 400;
+}
+
+.turing .text {
+    width: 60%;
+    float: right;
+}
+
+
+/* Modal Header */
+
+.modal {
+    display: none;
+    /* Hidden by default */
+    position: fixed;
+    /* Stay in place */
+    z-index: 1;
+    /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%;
+    /* Full width */
+    height: 100%;
+    /* Full height */
+    overflow: auto;
+    /* Enable scroll if needed */
+    background-color: rgb(0, 0, 0);
+    /* Fallback color */
+    background-color: rgba(0, 0, 0, 0.4);
+    /* Black w/ opacity */
+}
+
+
+/* Modal Content/Box */
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    /* 15% from the top and centered */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 30%;
+    /* Could be more or less, depending on screen size */
+}
+
+.modal-wrapper {
+    width: 100%;
+    padding: 20px 10px 10px 10px;
+    clear: left;
+}
+
+.modal-boxes {
+    width: 40%;
+    height: 9rem;
+    padding: 10px;
+    float: left;
+    margin: 10px;
+}
+
+.modal-boxes img {
+    width: 100px;
+    margin: 0 auto;
+    margin-left: auto;
+    margin-right: auto;
+    align-content: center;
+    padding-bottom: 15px;
+}
+
+.modal-boxes label {
+    text-align: center;
+    padding: 10px;
+    color: #888;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.modal-wrapper:after {
+    content: ".";
+    visibility: hidden;
+    display: block;
+    height: 0;
+    clear: both;
+}
+
+.modal-header {
+    vertical-align: center;
+    background-color: transparent;
+    color: black;
+    width: 100%;
+    height: 50px;
+}
+
+.modal-header .text {
+    padding-top: 25px;
+    padding-bottom: 16px;
+    font-size: 20px;
+    color: #888;
+}
+
+
+/* Modal Body */
+
+.modal-body {
+    padding: 2px 16px;
+}
+
+.modal-body p {
+    padding: 2px 16px;
+}
+
+.modal-body input[type=text],
+.modal-body input[type=email],
+.modal-body input[type=tel],
+.modal-body input[type=password],
+.modal-body select {
+    width: 100% !important;
+}
+
+
+/* Modal Footer */
+
+.modal-footer {
+    padding: 2px 16px;
+    background-color: transparent;
+    color: white;
+}
+
+.modal-footer:after {
+    content: ".";
+    visibility: hidden;
+    display: block;
+    height: 0;
+    clear: both;
+}
+
+
+/* The Close Button */
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+
+/* Modal Form  */
+
+.form-objs {
+    width: 100%;
+}
+
+.form-objl {
+    width: 49%;
+    float: left;
+}
+
+.form-objl input[type=button],
+.form-objl input[type=submit],
+.form-objl input[type=reset],
+.form-objr input[type=reset],
+.form-objr input[type=button],
+.form-objr input[type=submit] {
+    width: 100%;
+    margin: 5px 20px 40px 5px !important;
+    padding: 15px 20px !important;
+}
+
+.form-objr {
+    width: 49%;
+    float: right;
+}
+
+
+/* Hidden Form */
+
+.hidfrm {
+    width: 85%;
+    margin: 0 auto;
+}
+
+.hidfrml {
+    width: 60%;
+    padding: 0 !important;
+    margin: 0 !important;
+    float: left;
+}
+
+.hidfrml input[type=text],
+.hidfrml input[type=password],
+.hidfrml input[type=tel],
+.hidfrmr input[type=text],
+.hidfrmr input[type=tel],
+.hidfrmr input[type=password] {
+    width: 100% !important;
+    margin-left: 0px !important;
+}
+
+.hidfrmr {
+    width: 40%;
+    float: right;
+}
+
+
+/* Tabs Menu */
+
+.tabs {
+    padding: 0px;
+}
+
+.tabs-btn {
+    width: 100%;
+    height: 200px;
+    border: 1px solid transparent;
+    background-color: transparent;
+    cursor: pointer;
+}
+
+.tabs-btn img {
+    width: 50%;
+}
+
+.tabs-btn label {
+    width: 100%;
+    margin: 0 auto;
+    padding-top: 10px;
+    font-size: 1.2em;
+}
+
+.tabs-col {
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+}
+
+.tabs:after {
+    content: ".";
+    visibility: hidden;
+    display: block;
+    height: 0;
+    clear: both;
+}
+
+
+/* Modal Colum */
+
+.col-sm-6 {
+    width: 50%;
+}
+
+@media (min-width: 768px) {
+    .col-sm-6 {
+        float: left;
+    }
+}
+
+.col-sm-6 {
+    position: relative;
+    min-height: 1px;
+    padding-right: 15px;
+    padding-left: 15px;
+}

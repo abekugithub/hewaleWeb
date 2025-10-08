@@ -1,0 +1,13 @@
+{
+  "require": {
+  "guzzlehttp/guzzle": "^6.3",
+  "php-di/php-di": "^6.0",
+  "monolog/monolog": "^2.0",
+    "adodb/adodb-php": "^5.20"
+  },
+    "autoload": {
+      "psr-4": {
+        "SmartpaySDK\\":"classes/"
+      }
+    }
+  }
